@@ -180,8 +180,14 @@ class Game {
     this.players = [new Player(name1, '🔴', 0), new Player(name2, '🔵', 1)];
     this.players[0].char = 'pig';   // 角色美術（之後可做選角）
     this.players[1].char = 'rabbit';
+    this.players.forEach(p => (p.money = 1500)); // 地產玩法本金較高
     this.board = new Board(40);
     this.questionBank = new QuestionBank(this.difficulty);
+    // 初始化地產：房子/商店格皆可買
+    this.properties = {};
+    this.board.tiles.forEach((type, idx) => {
+      if (PROPERTY_PRICE[type]) this.properties[idx] = { owner: null, level: 0, category: type, price: PROPERTY_PRICE[type] };
+    });
     this.round = 1;
     this.busy = false;                 // 重開時務必回到乾淨狀態
     this.extraRollPending = false;
@@ -230,8 +236,9 @@ class Game {
   }
 
   updatePanels() {
-    this.ui.updatePlayerCards(this.players, this.currentPlayerIndex);
+    this.ui.updatePlayerCards(this.players, this.currentPlayerIndex, this.properties);
     this.ui.updateRoundInfo(Math.min(this.round, this.maxRounds), this.maxRounds, this.players[this.currentPlayerIndex]);
+    this.ui.renderProperties(this.properties, this.board);
     this.pushState();
   }
 
@@ -295,7 +302,7 @@ class Game {
       case 'mult':
       case 'div':
       case 'word':
-        await this.handleQuestionTile(player, type);
+        await this.handlePropertyTile(player, type);
         break;
       case 'lucky':
         this.sound.lucky();
@@ -310,30 +317,65 @@ class Game {
     }
   }
 
-  async handleQuestionTile(player, category) {
+  // 地產格：答對數學題才能買地/蓋房；踩到別人的地，答對免付過路費、答錯要付
+  async handlePropertyTile(player, category) {
+    const idx = player.position;
+    const prop = this.properties[idx];
     const q = this.questionBank.getQuestion(category);
     const actor = this.currentPlayerIndex;
-    this.ui.openQuestionModal(category, q.text, this.canControl(actor));
-    this.send({ t: 'question', category, text: q.text, actor });
+
+    // 依地產狀態給提示標題，讓玩家知道這題是為了「買地/升級/免過路費」
+    const owner = prop.owner;
+    let hint;
+    if (owner === null) hint = `這塊地要價 $${prop.price}，答對就能買下！`;
+    else if (owner === player.index) hint = `你的地（Lv.${prop.level}），答對可蓋房升級（$${upgradeCost(prop.price)}）`;
+    else hint = `這是 ${this.players[owner].name} 的地，答對免付過路費，答錯要付 $${rentOf(prop.price, prop.level)}`;
+
+    this.ui.openQuestionModal(category, `${hint}\n\n${q.text}`, this.canControl(actor));
+    this.send({ t: 'question', category, text: `${hint}\n\n${q.text}`, actor });
 
     const answerVal = await this.waitForAnswer();
     const correct = answerVal !== null && Math.abs(answerVal - q.answer) < 1e-9;
-    const reward = REWARD_TABLE[category];
-    let msg;
+    if (correct) { player.stats.correct++; this.sound.correct(); this.ui.spawnCoinDrop(); }
+    else { player.stats.wrong++; this.sound.wrong(); }
 
-    if (correct) {
-      player.addMoney(reward.correct);
-      player.stats.correct++;
-      this.sound.correct();
-      this.ui.spawnCoinDrop();
-      msg = `✅ 答對了！獲得 $${reward.correct}`;
-      this.log(`${player.name} 答對${TILE_META[category].label}題，+$${reward.correct}`);
+    let msg;
+    if (owner === null) {
+      // 無主地：答對且買得起 → 買下
+      if (correct && player.money >= prop.price) {
+        player.addMoney(-prop.price); prop.owner = player.index; prop.level = 1;
+        msg = `✅ 答對！買下這塊地，花了 $${prop.price} 🏠`;
+        this.log(`${player.name} 買下第 ${idx} 格（$${prop.price}）`);
+      } else if (correct) {
+        msg = `✅ 答對了，但你的現金不夠買（需 $${prop.price}）`;
+      } else {
+        msg = `❌ 答錯了，無法買地。正解：${q.answer}\n${q.explain}`;
+      }
+    } else if (owner === player.index) {
+      // 自己的地：答對 → 蓋房升級
+      const cost = upgradeCost(prop.price);
+      if (correct && prop.level >= 3) {
+        msg = `✅ 答對！這塊地已經是最高等級 Lv.3 🏙️`;
+      } else if (correct && player.money >= cost) {
+        player.addMoney(-cost); prop.level++;
+        msg = `✅ 答對！蓋房升級到 Lv.${prop.level}，花了 $${cost} 🏗️`;
+        this.log(`${player.name} 升級第 ${idx} 格到 Lv.${prop.level}`);
+      } else if (correct) {
+        msg = `✅ 答對了，但升級要 $${cost}，現金不夠`;
+      } else {
+        msg = `❌ 答錯了，無法升級。正解：${q.answer}`;
+      }
     } else {
-      player.addMoney(reward.wrong);
-      player.stats.wrong++;
-      this.sound.wrong();
-      msg = `❌ 答錯了，${reward.wrong} 元\n正解：${q.answer}\n${q.explain}`;
-      this.log(`${player.name} 答錯${TILE_META[category].label}題，${reward.wrong}元`);
+      // 別人的地：答對免過路費，答錯付錢給地主
+      const rent = rentOf(prop.price, prop.level);
+      if (correct) {
+        msg = `✅ 答對！免付過路費，省下 $${rent} 🎉`;
+        this.log(`${player.name} 答對，免付過路費`);
+      } else {
+        player.addMoney(-rent); this.players[owner].addMoney(rent);
+        msg = `❌ 答錯，付過路費 $${rent} 給 ${this.players[owner].name}。正解：${q.answer}`;
+        this.log(`${player.name} 付過路費 $${rent} 給 ${this.players[owner].name}`);
+      }
     }
 
     this.ui.showQuestionFeedback(correct, msg, this.canControl(actor));
@@ -437,21 +479,34 @@ class Game {
     });
   }
 
+  // 玩家總資產 = 現金 + 名下地產價值（價格 × 等級）
+  netWorth(player) {
+    let land = 0;
+    for (const idx in this.properties) {
+      const pr = this.properties[idx];
+      if (pr.owner === player.index) land += pr.price * pr.level;
+    }
+    return player.money + land;
+  }
+
   endGame(reason) {
     this.setRollEnabled(false);
     const title = reason === 'reach' ? '🏁 有人抵達終點！' : '⏰ 20 回合結束！';
 
-    const maxMoney = Math.max(...this.players.map(p => p.money));
-    const winners = this.players.filter(p => p.money === maxMoney);
+    const worth = this.players.map(p => this.netWorth(p));
+    const maxWorth = Math.max(...worth);
+    const winners = this.players.filter((p, i) => worth[i] === maxWorth);
+    const fmt = n => '$' + n.toLocaleString('en-US');
     const winnerText = winners.length > 1
-      ? `🤝 平手！${winners.map(w => w.name).join('、')} 資產並列最高：${winners[0].formattedMoney()}`
-      : `🎉 冠軍是 ${winners[0].token} ${winners[0].name}！最終資產 ${winners[0].formattedMoney()}`;
+      ? `🤝 平手！${winners.map(w => w.name).join('、')} 總資產並列最高：${fmt(maxWorth)}`
+      : `🎉 冠軍是 ${winners[0].token} ${winners[0].name}！總資產 ${fmt(this.netWorth(winners[0]))}`;
 
     const statsHtml = this.players.map(p => {
       const total = p.stats.correct + p.stats.wrong;
       const rate = total ? Math.round((p.stats.correct / total) * 100) : 0;
+      const land = this.netWorth(p) - p.money;
       return `<p><b>${p.token} ${p.name}</b><br>
-        最終資產：${p.formattedMoney()}<br>
+        總資產：${fmt(this.netWorth(p))}（現金 ${p.formattedMoney()} ＋ 地產 ${fmt(land)}）<br>
         擲骰次數：${p.stats.rolls}　答對率：${rate}%（${p.stats.correct}對／${p.stats.wrong}錯）</p>`;
     }).join('') + `<p>總回合數：${Math.min(this.round, this.maxRounds)}</p>`;
 
@@ -478,6 +533,7 @@ class Game {
       maxRounds: this.maxRounds,
       diceFace: this._diceValue || null,
       rollEnabled: this._rollEnabled,
+      properties: this.properties,
     };
   }
 
@@ -547,9 +603,11 @@ class Game {
     if (!this.board) return; // 尚未收到 start，忽略先到的 sync
     this.players = s.players.map(p => Object.assign(new Player(p.name, p.token, p.index), p));
     this.currentPlayerIndex = s.currentPlayerIndex;
+    this.properties = s.properties || {};
     this.ui.renderTokens(this.players, this.board);
-    this.ui.updatePlayerCards(this.players, s.currentPlayerIndex);
+    this.ui.updatePlayerCards(this.players, s.currentPlayerIndex, this.properties);
     this.ui.updateRoundInfo(s.round, s.maxRounds, this.players[s.currentPlayerIndex]);
+    this.ui.renderProperties(this.properties, this.board);
     if (s.diceFace) this.ui.setDiceFace(s.diceFace);
     this.ui.setRollButton(!!s.rollEnabled && s.currentPlayerIndex === 1);
   }

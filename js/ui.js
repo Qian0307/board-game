@@ -37,22 +37,56 @@ class UI {
       place(g, r, c, 100 + r + c); this.boardEl.appendChild(g);
     }
 
-    // 2) 外圈事件格 + 建築/標記
+    // 2) 外圈：地產格＝方磚地基+房子/商店；其餘格＝地磚道路(＋起終/幸運陷阱標記)
     const BUILDING = { addsub: 'house', word: 'house', mult: 'shop', div: 'shop' };
     const MARK = { start: '🚩', end: '🏁', lucky: '🎁', trap: '💀' };
     board.tiles.forEach((type, idx) => {
       const gp = board.gridPosition(idx), r = gp.row - 1, c = gp.col - 1, meta = TILE_META[type];
-      const t = document.createElement('div');
-      t.className = `tile ${meta.cls}`; t.id = `tile-${idx}`; t.title = meta.label;
-      t.style.width = TW + 'px'; t.style.height = TH + 'px';
-      place(t, r, c, 300 + r + c); this.boardEl.appendChild(t);
-      if (BUILDING[type]) { const b = propImg(`assets/city/${BUILDING[type]}.png`, 50); center(b, r, c, 1000 + r + c); this.boardEl.appendChild(b); }
-      else if (MARK[type]) { const m = document.createElement('div'); m.className = 'iso-mark'; m.textContent = MARK[type]; center(m, r, c, 1000 + r + c); this.boardEl.appendChild(m); }
+      if (BUILDING[type]) {
+        // 地產：可上色的地基（tile-idx 供發光與地主上色）+ 建築
+        const t = document.createElement('div');
+        t.className = 'tile plot'; t.id = `tile-${idx}`; t.title = meta.label;
+        t.style.width = TW + 'px'; t.style.height = TH + 'px';
+        place(t, r, c, 300 + r + c); this.boardEl.appendChild(t);
+        const b = propImg(`assets/city/${BUILDING[type]}.png`, 50); b.id = `bldg-${idx}`;
+        center(b, r, c, 1000 + r + c); this.boardEl.appendChild(b);
+      } else {
+        // 道路：以地磚圖鋪面（tile-idx 供發光）
+        const f = document.createElement('div'); f.className = 'iso-floor road'; f.id = `tile-${idx}`; f.title = meta.label;
+        const im = document.createElement('img'); im.src = 'assets/city/tile.png'; im.style.height = '40px';
+        f.appendChild(im); center(f, r, c, 250 + r + c); this.boardEl.appendChild(f);
+        if (MARK[type]) { const m = document.createElement('div'); m.className = 'iso-mark'; m.textContent = MARK[type]; center(m, r, c, 1000 + r + c); this.boardEl.appendChild(m); }
+      }
     });
 
-    // 3) 內圈樹木與地磚廣場
-    [[3, 3], [3, 7], [7, 3], [7, 7], [8, 5], [2, 6]].forEach(([r, c]) => { const tr = propImg('assets/city/tree.png', 44); center(tr, r, c, 900 + r + c); this.boardEl.appendChild(tr); });
-    [[5, 5], [5, 4], [4, 5], [4, 4]].forEach(([r, c]) => { const f = document.createElement('div'); f.className = 'iso-floor'; const im = document.createElement('img'); im.src = 'assets/city/tile.png'; im.style.height = '30px'; f.appendChild(im); center(f, r, c, 200 + r + c); this.boardEl.appendChild(f); });
+    // 3) 內圈樹木
+    [[3, 3], [3, 7], [7, 3], [7, 7], [8, 5], [2, 6], [5, 5]].forEach(([r, c]) => { const tr = propImg('assets/city/tree.png', 44); center(tr, r, c, 900 + r + c); this.boardEl.appendChild(tr); });
+  }
+
+  // 依地產狀態上色地基並顯示等級徽章
+  renderProperties(properties, board) {
+    if (!this._iso || !properties) return;
+    const { TW, TH, offX, offY, iso } = this._iso;
+    for (const idx in properties) {
+      const pr = properties[idx];
+      const tile = document.getElementById(`tile-${idx}`);
+      if (tile) tile.style.background = pr.owner === null
+        ? 'linear-gradient(180deg,#efe9d8,#ddd3ba)'
+        : OWNER_COLOR[pr.owner];
+      let badge = document.getElementById(`badge-${idx}`);
+      if (pr.owner !== null && pr.level > 0) {
+        if (!badge) {
+          badge = document.createElement('div'); badge.id = `badge-${idx}`; badge.className = 'prop-badge';
+          const gp = board.gridPosition(+idx), p = iso(gp.row - 1, gp.col - 1);
+          badge.style.left = (p.x + offX + TW / 2) + 'px';
+          badge.style.top = (p.y + offY + TH / 2 - 54) + 'px';
+          badge.style.zIndex = '8000';
+          this.boardEl.appendChild(badge);
+        }
+        badge.textContent = 'Lv' + pr.level;
+        badge.style.background = OWNER_COLOR[pr.owner];
+      } else if (badge) { badge.remove(); }
+    }
   }
 
   // 依玩家目前位置擺放角色棋子（等距座標）
@@ -85,8 +119,15 @@ class UI {
     tile.classList.add('glow');
   }
 
-  // 更新左側玩家資訊卡與排行榜
-  updatePlayerCards(players, currentIndex) {
+  // 玩家總資產 = 現金 + 名下地產（價格 × 等級）
+  playerAssets(p, properties) {
+    let land = 0;
+    if (properties) for (const idx in properties) { const pr = properties[idx]; if (pr.owner === p.index) land += pr.price * pr.level; }
+    return p.money + land;
+  }
+
+  // 更新左側玩家資訊卡（顯示現金）與排行榜（顯示總資產）
+  updatePlayerCards(players, currentIndex, properties) {
     players.forEach((p, i) => {
       const card = document.getElementById(`player-card-${i}`);
       card.querySelector('.name-text').textContent = p.name;
@@ -95,13 +136,13 @@ class UI {
       card.querySelector('.player-status').textContent = p.skipTurn ? '😵 下回合暫停' : '';
       card.classList.toggle('active-turn', i === currentIndex);
     });
-    this.updateLeaderboard(players);
+    this.updateLeaderboard(players, properties);
   }
 
-  updateLeaderboard(players) {
+  updateLeaderboard(players, properties) {
     const list = document.getElementById('leaderboard-list');
-    const sorted = [...players].sort((a, b) => b.money - a.money);
-    list.innerHTML = sorted.map(p => `<li>${p.token} ${p.name}：${p.formattedMoney()}</li>`).join('');
+    const sorted = [...players].sort((a, b) => this.playerAssets(b, properties) - this.playerAssets(a, properties));
+    list.innerHTML = sorted.map(p => `<li>${p.token} ${p.name}：$${this.playerAssets(p, properties).toLocaleString('en-US')}</li>`).join('');
   }
 
   updateRoundInfo(round, maxRounds, currentPlayer) {

@@ -11,13 +11,20 @@ const TILE_META = {
   trap:   { icon: '💀', label: '陷阱', cls: 'tile-trap' },
 };
 
-// 獎懲設定：依格子類型決定答對/答錯的金額變動
+// 獎懲設定：依格子類型決定答對/答錯的金額變動（幸運/陷阱等非地產格仍可能用到）
 const REWARD_TABLE = {
   addsub: { correct: 50, wrong: -20 },
   mult:   { correct: 100, wrong: -50 },
   div:    { correct: 100, wrong: -50 },
   word:   { correct: 150, wrong: -60 },
 };
+
+// 地產設定：房子/商店格可買地。價格依題型難度，答對才能買/升級，答錯要付過路費。
+const PROPERTY_PRICE = { addsub: 200, mult: 300, div: 300, word: 400 };
+const OWNER_COLOR = ['#ff9f9f', '#8fb8ff']; // 玩家1(豬)粉、玩家2(兔)藍
+// 過路費 = 價格 × 0.25 × 等級；升級費 = 價格 × 0.4；最高 3 級
+function rentOf(price, level) { return Math.round(price * 0.25 * level); }
+function upgradeCost(price) { return Math.round(price * 0.4); }
 
 class Board {
   constructor(size = 40) {
