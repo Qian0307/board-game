@@ -11,49 +11,69 @@ class UI {
     this.screens.forEach(s => s.classList.toggle('active', s.id === id));
   }
 
-  // 繪製棋盤格子：沿方形外圈排列（像大富翁一樣繞圈圈），中間留空
+  // 繪製等距(2.5D)棋盤：草地鋪底 + 外圈道路/事件格 + 建築/樹木裝飾
   renderBoard(board) {
     this.boardEl.innerHTML = '';
-    const ringLen = board.ringLen;
-    this.boardEl.style.gridTemplateColumns = `repeat(${ringLen}, 1fr)`;
-    this.boardEl.style.gridTemplateRows = `repeat(${ringLen}, 1fr)`;
+    const TW = 60, TH = 30, RING = board.ringLen, offY = 58;
+    const iso = (r, c) => ({ x: (c - r) * TW / 2, y: (c + r) * TH / 2 });
 
+    let minX = 1e9, maxX = -1e9, maxY = -1e9;
+    for (let r = 0; r < RING; r++) for (let c = 0; c < RING; c++) {
+      const p = iso(r, c); minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+    }
+    const offX = -minX + TW / 2;
+    this.boardEl.style.width = ((maxX - minX) + TW) + 'px';
+    this.boardEl.style.height = (maxY + TH + offY + 20) + 'px';
+    this._iso = { TW, TH, offX, offY, iso };
+
+    const place = (el, r, c, z) => { const p = iso(r, c); el.style.left = (p.x + offX) + 'px'; el.style.top = (p.y + offY) + 'px'; el.style.zIndex = String(z); };
+    const center = (el, r, c, z) => { const p = iso(r, c); el.style.left = (p.x + offX + TW / 2) + 'px'; el.style.top = (p.y + offY + TH / 2) + 'px'; el.style.zIndex = String(z); };
+    const propImg = (src, h) => { const d = document.createElement('div'); d.className = 'iso-prop'; const im = document.createElement('img'); im.src = src; im.style.height = h + 'px'; d.appendChild(im); return d; };
+
+    // 1) 草地鋪滿
+    for (let r = 0; r < RING; r++) for (let c = 0; c < RING; c++) {
+      const g = document.createElement('div');
+      g.className = 'grass-cell'; g.style.width = TW + 'px'; g.style.height = TH + 'px';
+      place(g, r, c, 100 + r + c); this.boardEl.appendChild(g);
+    }
+
+    // 2) 外圈事件格 + 建築/標記
+    const BUILDING = { addsub: 'house', word: 'house', mult: 'shop', div: 'shop' };
+    const MARK = { start: '🚩', end: '🏁', lucky: '🎁', trap: '💀' };
     board.tiles.forEach((type, idx) => {
-      const meta = TILE_META[type];
-      const { row, col } = board.gridPosition(idx);
-      const tile = document.createElement('div');
-      tile.className = `tile ${meta.cls}`;
-      tile.id = `tile-${idx}`;
-      tile.title = meta.label;
-      tile.style.gridRow = row;
-      tile.style.gridColumn = col;
-      tile.innerHTML = `
-        <span class="tile-idx">${idx}</span>
-        <span class="tile-icon">${meta.icon}</span>
-        <div class="tile-tokens" id="tile-tokens-${idx}"></div>
-      `;
-      this.boardEl.appendChild(tile);
+      const gp = board.gridPosition(idx), r = gp.row - 1, c = gp.col - 1, meta = TILE_META[type];
+      const t = document.createElement('div');
+      t.className = `tile ${meta.cls}`; t.id = `tile-${idx}`; t.title = meta.label;
+      t.style.width = TW + 'px'; t.style.height = TH + 'px';
+      place(t, r, c, 300 + r + c); this.boardEl.appendChild(t);
+      if (BUILDING[type]) { const b = propImg(`assets/city/${BUILDING[type]}.png`, 50); center(b, r, c, 1000 + r + c); this.boardEl.appendChild(b); }
+      else if (MARK[type]) { const m = document.createElement('div'); m.className = 'iso-mark'; m.textContent = MARK[type]; center(m, r, c, 1000 + r + c); this.boardEl.appendChild(m); }
     });
 
-    // 中間留空的裝飾區塊
-    const center = document.createElement('div');
-    center.className = 'board-center';
-    center.style.gridRow = `2 / ${ringLen}`;
-    center.style.gridColumn = `2 / ${ringLen}`;
-    center.innerHTML = `<span>💰 財富<br>大富翁</span>`;
-    this.boardEl.appendChild(center);
+    // 3) 內圈樹木與地磚廣場
+    [[3, 3], [3, 7], [7, 3], [7, 7], [8, 5], [2, 6]].forEach(([r, c]) => { const tr = propImg('assets/city/tree.png', 44); center(tr, r, c, 900 + r + c); this.boardEl.appendChild(tr); });
+    [[5, 5], [5, 4], [4, 5], [4, 4]].forEach(([r, c]) => { const f = document.createElement('div'); f.className = 'iso-floor'; const im = document.createElement('img'); im.src = 'assets/city/tile.png'; im.style.height = '30px'; f.appendChild(im); center(f, r, c, 200 + r + c); this.boardEl.appendChild(f); });
   }
 
-  // 依玩家目前位置，重新擺放棋子圖示
-  renderTokens(players) {
-    document.querySelectorAll('.tile-tokens').forEach(el => (el.innerHTML = ''));
+  // 依玩家目前位置擺放角色棋子（等距座標）
+  renderTokens(players, board) {
+    if (!this._iso || !board) return;
+    const { TW, TH, offX, offY, iso } = this._iso;
     players.forEach(p => {
-      const slot = document.getElementById(`tile-tokens-${p.position}`);
-      if (slot) {
-        const span = document.createElement('span');
-        span.textContent = p.token;
-        slot.appendChild(span);
+      let el = document.getElementById(`token-${p.index}`);
+      if (!el) {
+        el = document.createElement('div');
+        el.id = `token-${p.index}`; el.className = 'token-char';
+        const im = document.createElement('img');
+        im.src = `assets/characters/${p.char || 'pig'}_front.png`; im.style.height = '52px';
+        el.appendChild(im);
+        this.boardEl.appendChild(el);
       }
+      const gp = board.gridPosition(p.position), r = gp.row - 1, c = gp.col - 1, pt = iso(r, c);
+      const dodge = p.index * 14 - 7; // 兩人同格時錯開一點
+      el.style.left = (pt.x + offX + TW / 2 + dodge) + 'px';
+      el.style.top = (pt.y + offY + TH / 2) + 'px';
+      el.style.zIndex = String(9000 + r + c);
     });
   }
 

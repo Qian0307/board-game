@@ -178,6 +178,8 @@ class Game {
   startGame(name1, name2) {
     this._lastNames = [name1, name2];
     this.players = [new Player(name1, '🔴', 0), new Player(name2, '🔵', 1)];
+    this.players[0].char = 'pig';   // 角色美術（之後可做選角）
+    this.players[1].char = 'rabbit';
     this.board = new Board(40);
     this.questionBank = new QuestionBank(this.difficulty);
     this.round = 1;
@@ -201,7 +203,7 @@ class Game {
     this.ui.showScreen('screen-game');
     this.ui.eventLogEl.innerHTML = '';
     this.ui.renderBoard(this.board);
-    this.ui.renderTokens(this.players);
+    this.ui.renderTokens(this.players, this.board);
     this.updatePanels();
     this.log(`${name1} 擲出 ${r1} 點，${name2} 擲出 ${r2} 點，${this.players[this.currentPlayerIndex].name} 先攻！`);
     this.setRollEnabled(true);
@@ -274,7 +276,7 @@ class Game {
     const count = Math.abs(steps);
     for (let i = 0; i < count; i++) {
       player.moveBy(dir, this.board.size);
-      this.ui.renderTokens(this.players);
+      this.ui.renderTokens(this.players, this.board);
       this.pushState();
       this.sound.move();
       await UI.wait(120);
@@ -467,7 +469,7 @@ class Game {
   snapshot() {
     return {
       players: this.players.map(p => ({
-        name: p.name, token: p.token, index: p.index,
+        name: p.name, token: p.token, index: p.index, char: p.char,
         money: p.money, position: p.position, skipTurn: p.skipTurn,
         stats: { rolls: p.stats.rolls, correct: p.stats.correct, wrong: p.stats.wrong },
       })),
@@ -545,7 +547,7 @@ class Game {
     if (!this.board) return; // 尚未收到 start，忽略先到的 sync
     this.players = s.players.map(p => Object.assign(new Player(p.name, p.token, p.index), p));
     this.currentPlayerIndex = s.currentPlayerIndex;
-    this.ui.renderTokens(this.players);
+    this.ui.renderTokens(this.players, this.board);
     this.ui.updatePlayerCards(this.players, s.currentPlayerIndex);
     this.ui.updateRoundInfo(s.round, s.maxRounds, this.players[s.currentPlayerIndex]);
     if (s.diceFace) this.ui.setDiceFace(s.diceFace);
