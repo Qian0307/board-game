@@ -41,15 +41,15 @@
     position: absolute; right: 14px; top: 10px; display: flex; flex-direction: column; gap: 10px; z-index: 60;
   }
   .avatar {
-    width: 58px; height: 58px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center; font-size: 30px;
+    width: 60px; height: 60px; border-radius: 50%; overflow: hidden;
+    display: flex; align-items: flex-end; justify-content: center;
     background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.25);
     border: 3px solid #ffd76b;
   }
+  .avatar img { width: 52px; height: auto; margin-bottom: -6px; }
   .avatar.p1 { border-color: #ff7b7b; }
-  .avatar.p2 { border-color: #ffd257; }
-  .avatar.p3 { border-color: #6bc6ff; }
-  .avatar.p4 { border-color: #d29bff; }
+  .avatar.p2 { border-color: #9a9a9a; }
+  .avatar.p3 { border-color: #e0a25a; }
 
   /* ===== 等距棋盤 ===== */
   #board {
@@ -81,6 +81,7 @@
     transition: left .35s ease, top .35s ease;
   }
   .sprite.small { font-size: 38px; }
+  .sprite.char img { display: block; filter: drop-shadow(0 4px 3px rgba(0,0,0,.35)); }
   .sprite.label {
     font-size: 11px; font-weight: bold; color: #5c4322;
     background: rgba(255,255,255,.8); border-radius: 6px; padding: 0 4px;
@@ -113,10 +114,9 @@
 <div class="stage">
   <!-- 右側玩家頭像列 -->
   <div class="avatars">
-    <div class="avatar p1">🐷</div>
-    <div class="avatar p2">🐱</div>
-    <div class="avatar p3">🐰</div>
-    <div class="avatar p4">🐵</div>
+    <div class="avatar p1"><img src="assets/characters/pig_front.png" alt="豬"></div>
+    <div class="avatar p2"><img src="assets/characters/rabbit_front.png" alt="兔"></div>
+    <div class="avatar p3"><img src="assets/characters/shiba_front.png" alt="柴犬"></div>
   </div>
 
   <div id="board"></div>
@@ -214,9 +214,22 @@ PATTERN.forEach((type, index) => {
 const deco = [[3,3,'🌳'],[3,7,'🌲'],[7,3,'🌲'],[7,7,'🌳'],[5,5,'⛲'],[4,5,'🌷'],[6,5,'🌻'],[5,3,'🌳'],[5,7,'🌳']];
 deco.forEach(([r, c, e]) => sprite(e, r, c, 'small'));
 
-// 5) 兩個角色，紅色會自動沿路走一圈
-const p1 = sprite('🔴', ringTiles[0].r, ringTiles[0].c, 'player');
-const p2 = sprite('🔵', ringTiles[5].r, ringTiles[5].c, 'player');
+// 站立圖片角色（去背 PNG）
+function imgSprite(src, r, c, cls = '', h = 100) {
+  const s = document.createElement('div');
+  s.className = 'sprite char ' + cls;
+  const im = document.createElement('img');
+  im.src = src; im.style.height = h + 'px';
+  s.appendChild(im);
+  place(s, r, c);
+  s.style.zIndex = String(5000 + r + c);
+  board.appendChild(s);
+  return s;
+}
+
+// 5) 兩個角色：豬會自動沿路走一圈，兔子站著
+const p1 = imgSprite('assets/characters/pig_side.png', ringTiles[0].r, ringTiles[0].c, 'player', 104);
+const p2 = imgSprite('assets/characters/rabbit_front.png', ringTiles[5].r, ringTiles[5].c, 'player', 104);
 
 let pos = 0;
 setInterval(() => {
