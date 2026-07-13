@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>財富大富翁 · 等距棋盤雛形</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft JhengHei", "PingFang TC", sans-serif;
+    background: linear-gradient(180deg, #8fd3ff 0%, #b7e88a 55%, #6fbf4a 100%);
+    min-height: 100vh; overflow-x: hidden; color: #3a2b1a;
+  }
+
+  /* ===== 上方多幣別 HUD ===== */
+  .hud {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    background: linear-gradient(180deg, #3aa0e6, #2b7fc4);
+    border-bottom: 3px solid #1c5f97;
+    box-shadow: 0 3px 10px rgba(0,0,0,.25);
+    flex-wrap: wrap;
+  }
+  .hud .coin {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,0,0,.18); color: #fff; font-weight: bold;
+    padding: 5px 12px 5px 8px; border-radius: 999px; font-size: 15px;
+  }
+  .hud .coin .ic { font-size: 18px; }
+  .hud .spacer { flex: 1; }
+  .hud .tool {
+    width: 40px; height: 40px; border-radius: 50%; border: none;
+    background: #d7eefc; font-size: 20px; cursor: pointer;
+    box-shadow: 0 3px 0 #9cc9e6;
+  }
+
+  /* ===== 版面：棋盤 + 右側頭像 ===== */
+  .stage { position: relative; display: flex; justify-content: center; padding: 20px 10px 60px; }
+  .avatars {
+    position: absolute; right: 14px; top: 10px; display: flex; flex-direction: column; gap: 10px; z-index: 60;
+  }
+  .avatar {
+    width: 58px; height: 58px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 30px;
+    background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.25);
+    border: 3px solid #ffd76b;
+  }
+  .avatar.p1 { border-color: #ff7b7b; }
+  .avatar.p2 { border-color: #ffd257; }
+  .avatar.p3 { border-color: #6bc6ff; }
+  .avatar.p4 { border-color: #d29bff; }
+
+  /* ===== 等距棋盤 ===== */
+  #board {
+    position: relative;
+    /* 尺寸由 JS 依格數計算 */
+  }
+  .tile {
+    position: absolute;
+    width: 64px; height: 32px;               /* 2:1 等距菱形 */
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    transition: filter .2s;
+  }
+  .tile.grass  { background: linear-gradient(180deg, #a7e26a, #86c74e); }
+  .tile.road   { background: linear-gradient(180deg, #d7dbe0, #bcc2ca); }
+  .tile.start  { background: linear-gradient(180deg, #ffe07a, #ffcf4d); }
+  .tile.end    { background: linear-gradient(180deg, #ff9d9d, #ff7b7b); }
+  .tile.addsub { background: linear-gradient(180deg, #b8f0d4, #8fe3b8); }
+  .tile.mult   { background: linear-gradient(180deg, #ffe0c2, #ffc79a); }
+  .tile.div    { background: linear-gradient(180deg, #e5f4c8, #cfe89f); }
+  .tile.word   { background: linear-gradient(180deg, #ffc2bd, #ff9f97); }
+  .tile.lucky  { background: linear-gradient(180deg, #dcc4ff, #c19bff); }
+  .tile.trap   { background: linear-gradient(180deg, #cfcfcf, #a9a9a9); }
+
+  /* 站立的物件（房子/樹/角色）——等距上「立起來」的貼圖，之後換成 AI PNG */
+  .sprite {
+    position: absolute; transform: translate(-50%, -100%);
+    font-size: 30px; line-height: 1; pointer-events: none;
+    filter: drop-shadow(0 3px 2px rgba(0,0,0,.3));
+    transition: left .35s ease, top .35s ease;
+  }
+  .sprite.small { font-size: 24px; }
+  .sprite.label {
+    font-size: 11px; font-weight: bold; color: #5c4322;
+    background: rgba(255,255,255,.8); border-radius: 6px; padding: 0 4px;
+    transform: translate(-50%, -40%); filter: none;
+  }
+  .player { z-index: 9000; font-size: 34px; }
+
+  .caption {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
+    background: rgba(0,0,0,.72); color: #fff; text-align: center;
+    padding: 8px 12px; font-size: 13px; line-height: 1.5;
+  }
+  .caption b { color: #ffd76b; }
+</style>
+</head>
+<body>
+
+<!-- 多幣別資訊列（對應參考圖上方）-->
+<div class="hud">
+  <div class="coin"><span class="ic">🪙</span><span>713</span></div>
+  <div class="coin"><span class="ic">💰</span><span>98,800</span></div>
+  <div class="coin"><span class="ic">💵</span><span>100,000</span></div>
+  <div class="coin"><span class="ic">🎴</span><span>200</span></div>
+  <div class="coin"><span class="ic">🏅</span><span>Lv.1</span></div>
+  <div class="spacer"></div>
+  <button class="tool" title="搜尋">🔍</button>
+  <button class="tool" title="聊天">💬</button>
+</div>
+
+<div class="stage">
+  <!-- 右側玩家頭像列 -->
+  <div class="avatars">
+    <div class="avatar p1">🐷</div>
+    <div class="avatar p2">🐱</div>
+    <div class="avatar p3">🐰</div>
+    <div class="avatar p4">🐵</div>
+  </div>
+
+  <div id="board"></div>
+</div>
+
+<div class="caption">
+  這是 <b>等距 2.5D 棋盤雛形</b>：草地＋道路環＋建築（現在用 emoji 佔位）。
+  紅色角色 🔴 會自動沿路走一圈。<b>下一步用 AI 產出地磚／房子／角色的卡通圖，替換這些 emoji</b>，質感就會接近你給的參考圖。
+</div>
+
+<script>
+// ===== 40 格棋盤資料（沿用主遊戲的排列）=====
+const PATTERN = [
+  'start','normal','addsub','normal','lucky','mult','normal','trap','div','normal',
+  'word','normal','addsub','lucky','normal','mult','trap','normal','div','word',
+  'normal','addsub','normal','lucky','mult','normal','trap','div','normal','word',
+  'addsub','normal','lucky','mult','normal','trap','div','word','normal','end',
+];
+const RING = 11;            // 11x11 外圈 = 40 格
+const TW = 64, TH = 32;     // 菱形地磚寬高
+
+// index → 方形外圈的 (row,col)（1..11）
+function gridPos(index) {
+  const per = 10;
+  if (index <= per)      return { row: RING, col: RING - index };
+  if (index <= per * 2)  return { row: RING - (index - per), col: 1 };
+  if (index <= per * 3)  return { row: 1, col: 1 + (index - per * 2) };
+  return { row: 1 + (index - per * 3), col: RING };
+}
+
+// (r,c) 0-based → 等距螢幕座標
+function iso(r, c) {
+  return { x: (c - r) * TW / 2, y: (c + r) * TH / 2 };
+}
+
+const board = document.getElementById('board');
+
+// 依所有格子算出畫布範圍並置中
+let minX = 1e9, maxX = -1e9, maxY = -1e9;
+for (let r = 0; r < RING; r++) for (let c = 0; c < RING; c++) {
+  const p = iso(r, c);
+  minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); maxY = Math.max(maxY, p.y);
+}
+const offX = -minX + TW / 2;   // 讓最左的格子貼齊 0
+const W = (maxX - minX) + TW, H = maxY + TH + 40;
+board.style.width = W + 'px';
+board.style.height = H + 'px';
+
+function place(el, r, c, extraY = 0) {
+  const p = iso(r, c);
+  el.style.left = (p.x + offX) + 'px';
+  el.style.top = (p.y + extraY) + 'px';
+  el.style.zIndex = String(1000 + r + c);  // 畫家演算法：越前面越上層
+}
+
+// 1) 先鋪滿草地
+for (let r = 0; r < RING; r++) for (let c = 0; c < RING; c++) {
+  const t = document.createElement('div');
+  t.className = 'tile grass';
+  place(t, r, c);
+  board.appendChild(t);
+}
+
+// 2) 鋪外圈道路 / 事件格
+const ringTiles = {};  // index → {r,c}
+PATTERN.forEach((type, index) => {
+  const g = gridPos(index);
+  const r = g.row - 1, c = g.col - 1;
+  ringTiles[index] = { r, c };
+  const cls = (type === 'normal') ? 'road' : type;
+  const t = document.createElement('div');
+  t.className = 'tile ' + cls;
+  place(t, r, c);
+  board.appendChild(t);
+});
+
+// 站立貼圖
+function sprite(emoji, r, c, cls = '') {
+  const s = document.createElement('div');
+  s.className = 'sprite ' + cls;
+  s.textContent = emoji;
+  place(s, r, c);
+  s.style.zIndex = String(5000 + r + c);
+  board.appendChild(s);
+  return s;
+}
+
+// 3) 事件格上放建築 / 標記（對應房子、店鋪的感覺）
+const ICON = { start:'🚩', end:'🏁', addsub:'🏠', mult:'🏢', div:'🏪', word:'🏦', lucky:'🎁', trap:'💀' };
+PATTERN.forEach((type, index) => {
+  if (ICON[type]) { const { r, c } = ringTiles[index]; sprite(ICON[type], r, c, type === 'lucky' || type === 'trap' ? 'small' : ''); }
+});
+
+// 4) 內圈草地放樹木 / 裝飾，做出公園城市感
+const deco = [[3,3,'🌳'],[3,7,'🌲'],[7,3,'🌲'],[7,7,'🌳'],[5,5,'⛲'],[4,5,'🌷'],[6,5,'🌻'],[5,3,'🌳'],[5,7,'🌳']];
+deco.forEach(([r, c, e]) => sprite(e, r, c, 'small'));
+
+// 5) 兩個角色，紅色會自動沿路走一圈
+const p1 = sprite('🔴', ringTiles[0].r, ringTiles[0].c, 'player');
+const p2 = sprite('🔵', ringTiles[5].r, ringTiles[5].c, 'player');
+
+let pos = 0;
+setInterval(() => {
+  pos = (pos + 1) % 40;
+  const { r, c } = ringTiles[pos];
+  place(p1, r, c, -4);
+  p1.style.zIndex = String(9000 + r + c);
+}, 500);
+</script>
+</body>
+</html>
