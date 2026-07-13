@@ -58,7 +58,7 @@
   }
   .tile {
     position: absolute;
-    width: 64px; height: 32px;               /* 2:1 等距菱形 */
+    width: 104px; height: 52px;              /* 2:1 等距菱形（放大） */
     clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
     transition: filter .2s;
   }
@@ -76,17 +76,17 @@
   /* 站立的物件（房子/樹/角色）——等距上「立起來」的貼圖，之後換成 AI PNG */
   .sprite {
     position: absolute; transform: translate(-50%, -100%);
-    font-size: 30px; line-height: 1; pointer-events: none;
+    font-size: 48px; line-height: 1; pointer-events: none;
     filter: drop-shadow(0 3px 2px rgba(0,0,0,.3));
     transition: left .35s ease, top .35s ease;
   }
-  .sprite.small { font-size: 24px; }
+  .sprite.small { font-size: 38px; }
   .sprite.label {
     font-size: 11px; font-weight: bold; color: #5c4322;
     background: rgba(255,255,255,.8); border-radius: 6px; padding: 0 4px;
     transform: translate(-50%, -40%); filter: none;
   }
-  .player { z-index: 9000; font-size: 34px; }
+  .player { z-index: 9000; font-size: 54px; }
 
   .caption {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 200;
@@ -136,7 +136,7 @@ const PATTERN = [
   'addsub','normal','lucky','mult','normal','trap','div','word','normal','end',
 ];
 const RING = 11;            // 11x11 外圈 = 40 格
-const TW = 64, TH = 32;     // 菱形地磚寬高
+const TW = 104, TH = 52;    // 菱形地磚寬高（放大、更緊密）
 
 // index → 方形外圈的 (row,col)（1..11）
 function gridPos(index) {
