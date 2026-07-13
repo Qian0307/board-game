@@ -82,6 +82,8 @@
   }
   .sprite.small { font-size: 38px; }
   .sprite.char img { display: block; filter: drop-shadow(0 4px 3px rgba(0,0,0,.35)); }
+  .sprite.floor { transform: translate(-50%, -45%); }
+  .sprite.floor img { filter: none; }
   .sprite.label {
     font-size: 11px; font-weight: bold; color: #5c4322;
     background: rgba(255,255,255,.8); border-radius: 6px; padding: 0 4px;
@@ -123,8 +125,8 @@
 </div>
 
 <div class="caption">
-  這是 <b>等距 2.5D 棋盤雛形</b>：草地＋道路環＋建築（現在用 emoji 佔位）。
-  紅色角色 🔴 會自動沿路走一圈。<b>下一步用 AI 產出地磚／房子／角色的卡通圖，替換這些 emoji</b>，質感就會接近你給的參考圖。
+  <b>等距 2.5D 棋盤雛形</b>：真美術素材版——Q 版角色（豬/兔/柴犬）、房子、商店、樹、地磚廣場都是你提供的圖去背後貼上。
+  豬會自動沿路走一圈。<b>下一步：把這些接進正式遊戲，做「買地蓋房＋數學題」玩法。</b>
 </div>
 
 <script>
@@ -204,17 +206,7 @@ function sprite(emoji, r, c, cls = '') {
   return s;
 }
 
-// 3) 事件格上放建築 / 標記（對應房子、店鋪的感覺）
-const ICON = { start:'🚩', end:'🏁', addsub:'🏠', mult:'🏢', div:'🏪', word:'🏦', lucky:'🎁', trap:'💀' };
-PATTERN.forEach((type, index) => {
-  if (ICON[type]) { const { r, c } = ringTiles[index]; sprite(ICON[type], r, c, type === 'lucky' || type === 'trap' ? 'small' : ''); }
-});
-
-// 4) 內圈草地放樹木 / 裝飾，做出公園城市感
-const deco = [[3,3,'🌳'],[3,7,'🌲'],[7,3,'🌲'],[7,7,'🌳'],[5,5,'⛲'],[4,5,'🌷'],[6,5,'🌻'],[5,3,'🌳'],[5,7,'🌳']];
-deco.forEach(([r, c, e]) => sprite(e, r, c, 'small'));
-
-// 站立圖片角色（去背 PNG）
+// 站立圖片貼圖（去背 PNG）。floor=平鋪地磚，其餘為站立的建築/樹/角色
 function imgSprite(src, r, c, cls = '', h = 100) {
   const s = document.createElement('div');
   s.className = 'sprite char ' + cls;
@@ -222,10 +214,23 @@ function imgSprite(src, r, c, cls = '', h = 100) {
   im.src = src; im.style.height = h + 'px';
   s.appendChild(im);
   place(s, r, c);
-  s.style.zIndex = String(5000 + r + c);
+  s.style.zIndex = String((cls.indexOf('floor') >= 0 ? 200 : 5000) + r + c);
   board.appendChild(s);
   return s;
 }
+
+// 3) 事件格擺建築（房子/商店＝可買地產），起終點與幸運/陷阱用小圖示
+const BUILDING = { addsub: 'house', word: 'house', mult: 'shop', div: 'shop' };
+const MARK = { start: '🚩', end: '🏁', lucky: '🎁', trap: '💀' };
+PATTERN.forEach((type, index) => {
+  const { r, c } = ringTiles[index];
+  if (BUILDING[type]) imgSprite('assets/city/' + BUILDING[type] + '.png', r, c, '', 96);
+  else if (MARK[type]) sprite(MARK[type], r, c, 'small');
+});
+
+// 4) 內圈草地：樹木與地磚廣場
+[[3,3],[3,7],[7,3],[7,7],[8,5],[2,6],[6,2]].forEach(([r, c]) => imgSprite('assets/city/tree.png', r, c, '', 82));
+[[5,5],[5,4],[4,5],[4,4]].forEach(([r, c]) => imgSprite('assets/city/tile.png', r, c, 'floor', 52));
 
 // 5) 兩個角色：豬會自動沿路走一圈，兔子站著
 const p1 = imgSprite('assets/characters/pig_side.png', ringTiles[0].r, ringTiles[0].c, 'player', 104);
