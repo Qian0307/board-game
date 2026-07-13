@@ -11,6 +11,9 @@ body {
 
 button { cursor: pointer; font-family: inherit; }
 
+/* 通用隱藏（按鈕、提示、面板等靠 .hidden 切換顯示）*/
+.hidden { display: none !important; }
+
 /* ===== 畫面切換 ===== */
 .screen {
   display: none;
