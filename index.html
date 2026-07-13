@@ -141,7 +141,36 @@
 
     <!-- 中間：棋盤 -->
     <main class="board-area">
-      <div class="board-viewport"><div id="board" class="board"></div></div>
+      <div class="board-stage">
+        <div class="board-viewport"><div id="board" class="board"></div></div>
+
+        <!-- 題目面板：顯示在地圖上，不遮住整個棋盤 -->
+        <div id="modal-question" class="board-modal hidden">
+          <div class="modal-box">
+            <h3 id="question-tile-title">事件格</h3>
+            <p id="question-text" class="question-text"></p>
+            <input type="number" id="question-input" placeholder="請輸入答案">
+            <div class="modal-buttons">
+              <button id="btn-answer-submit" class="btn btn-primary">送出</button>
+              <button id="btn-question-continue" class="btn btn-primary hidden">繼續 ▶</button>
+            </div>
+            <div id="question-wait" class="wait-hint hidden">⏳ 等待對方作答…</div>
+            <div id="question-feedback" class="question-feedback hidden"></div>
+          </div>
+        </div>
+
+        <!-- 幸運/陷阱事件面板 -->
+        <div id="modal-event" class="board-modal hidden">
+          <div class="modal-box">
+            <h3 id="event-title">事件</h3>
+            <p id="event-text" class="question-text"></p>
+            <div class="modal-buttons">
+              <button id="btn-event-ok" class="btn btn-primary">確定</button>
+            </div>
+            <div id="event-wait" class="wait-hint hidden">⏳ 等待對方確認…</div>
+          </div>
+        </div>
+      </div>
 
       <div class="dice-area">
         <div id="dice" class="dice">🎲</div>
@@ -152,33 +181,6 @@
     </main>
   </div>
 </section>
-
-<!-- ========== 問答彈窗 ========== -->
-<div id="modal-question" class="modal hidden">
-  <div class="modal-box">
-    <h3 id="question-tile-title">事件格</h3>
-    <p id="question-text" class="question-text"></p>
-    <input type="number" id="question-input" placeholder="請輸入答案">
-    <div class="modal-buttons">
-      <button id="btn-answer-submit" class="btn btn-primary">送出</button>
-      <button id="btn-question-continue" class="btn btn-primary hidden">繼續 ▶</button>
-    </div>
-    <div id="question-wait" class="wait-hint hidden">⏳ 等待對方作答…</div>
-    <div id="question-feedback" class="question-feedback hidden"></div>
-  </div>
-</div>
-
-<!-- ========== 幸運/陷阱事件彈窗 ========== -->
-<div id="modal-event" class="modal hidden">
-  <div class="modal-box">
-    <h3 id="event-title">事件</h3>
-    <p id="event-text" class="question-text"></p>
-    <div class="modal-buttons">
-      <button id="btn-event-ok" class="btn btn-primary">確定</button>
-    </div>
-    <div id="event-wait" class="wait-hint hidden">⏳ 等待對方確認…</div>
-  </div>
-</div>
 
 <!-- ========== 結算畫面 ========== -->
 <section id="screen-end" class="screen">

@@ -221,24 +221,29 @@ button { cursor: pointer; font-family: inherit; }
 }
 .event-log div { border-bottom: 1px dashed #e0c37a; padding: 3px 0; }
 
-/* ===== 彈窗 ===== */
-.modal {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.55);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 50;
+/* ===== 題目/事件面板（顯示在地圖上，不遮住整個棋盤）===== */
+.board-stage { position: relative; }
+.board-modal {
+  position: absolute; left: 0; right: 0; bottom: 10px;
+  display: flex; justify-content: center;
+  pointer-events: none;            /* 面板以外的地圖保持可見、不攔截點擊 */
+  z-index: 40;
 }
-.modal.hidden { display: none; }
 .modal-box {
-  background: #fffdf6;
-  border-radius: 20px;
-  padding: 30px 34px;
-  max-width: 480px;
-  width: 90%;
+  pointer-events: auto;
+  background: rgba(255, 253, 246, 0.97);
+  border-radius: 18px;
+  padding: 14px 22px 18px;
+  max-width: 430px;
+  width: 92%;
   text-align: center;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+  border: 2px solid #ffd76b;
+  animation: panelPop .18s ease-out;
 }
-.question-text { font-size: 1.15em; line-height: 1.7; white-space: pre-wrap; margin: 14px 0; }
+@keyframes panelPop { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+.modal-box h3 { margin: 0 0 4px; font-size: 1.05em; }
+.question-text { font-size: 1.1em; line-height: 1.6; white-space: pre-wrap; margin: 8px 0; }
 #question-input {
   width: 100%; padding: 12px; font-size: 1.2em; text-align: center;
   border-radius: 10px; border: 2px solid #e0c37a; margin-bottom: 12px;
