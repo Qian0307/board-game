@@ -1,0 +1,303 @@
+/* ===== 基礎設定 ===== */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Microsoft JhengHei", "PingFang TC", "Segoe UI", sans-serif;
+  background: linear-gradient(160deg, #ffe9a8 0%, #ffd6e8 45%, #c9f0ff 100%);
+  min-height: 100vh;
+  color: #3a2b1a;
+}
+
+button { cursor: pointer; font-family: inherit; }
+
+/* ===== 畫面切換 ===== */
+.screen {
+  display: none;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.screen.active { display: flex; }
+
+.panel {
+  background: rgba(255,255,255,0.92);
+  border-radius: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  padding: 32px 40px;
+  max-width: 600px;
+  width: 100%;
+  text-align: center;
+}
+
+.title { font-size: 2.4em; margin: 0 0 4px; text-shadow: 2px 2px 0 #ffcf5c; }
+.subtitle { color: #8a6d3b; margin-bottom: 24px; }
+
+.btn {
+  display: inline-block;
+  padding: 14px 22px;
+  margin: 8px;
+  border: none;
+  border-radius: 14px;
+  background: #fff3cf;
+  font-size: 1.05em;
+  font-weight: bold;
+  color: #5c4322;
+  box-shadow: 0 4px 0 #e0c37a;
+  transition: transform 0.1s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #e0c37a; }
+.btn-primary { background: linear-gradient(135deg, #ff9f6b, #ff6b6b); color: #fff; box-shadow: 0 4px 0 #c94b4b; }
+
+.home-buttons { display: flex; flex-direction: column; align-items: center; }
+.home-buttons .btn { width: 260px; }
+
+/* ===== 規則 / 難度 ===== */
+.rules-content p { text-align: left; line-height: 1.8; }
+.difficulty-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+.diff-option { line-height: 1.6; }
+.diff-option.selected { outline: 3px solid #ff6b6b; }
+
+/* ===== 玩家設定 ===== */
+.setup-form { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+.setup-form label { text-align: left; font-weight: bold; display: flex; flex-direction: column; gap: 6px; }
+.setup-form input {
+  padding: 10px 14px; border-radius: 10px; border: 2px solid #e0c37a; font-size: 1em;
+}
+
+/* ===== 線上房間 ===== */
+.room-code {
+  font-size: 2.6em; font-weight: bold; letter-spacing: 0.15em;
+  color: #ff6b6b; background: #fff3cf; border-radius: 14px;
+  padding: 10px 8px; margin: 10px auto; max-width: 260px;
+  font-family: "Segoe UI", monospace;
+}
+.hint { color: #8a6d3b; font-size: 0.9em; }
+.online-label { display: flex; flex-direction: column; gap: 6px; text-align: left; font-weight: bold; margin: 10px 0; }
+.online-label input { padding: 10px 14px; border-radius: 10px; border: 2px solid #e0c37a; font-size: 1em; }
+#input-join-code { text-transform: uppercase; letter-spacing: 0.2em; text-align: center; font-size: 1.3em; }
+.guest-info { margin: 10px 0; font-weight: bold; color: #1a8f4c; min-height: 22px; }
+#host-status { color: #8a6d3b; margin: 12px 0; }
+
+#net-status { margin-top: 6px; font-size: 0.85em; font-weight: bold; }
+#net-status.net-ok { color: #1a8f4c; }
+#net-status.net-bad { color: #c94b4b; }
+.wait-hint { margin-top: 12px; color: #8a6d3b; font-weight: bold; }
+
+/* ===== 遊戲畫面 ===== */
+.game-layout {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
+  align-items: flex-start;
+}
+
+.side-panel { width: 260px; flex-shrink: 0; }
+
+.player-card {
+  background: rgba(255,255,255,0.92);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border: 3px solid transparent;
+}
+.player-card.active-turn { border-color: #ff9f6b; box-shadow: 0 0 16px rgba(255,159,107,0.6); }
+.player-name { font-size: 1.15em; font-weight: bold; margin-bottom: 6px; }
+.player-stat { font-size: 0.95em; margin: 2px 0; }
+.player-stat.money { color: #1a8f4c; font-weight: bold; }
+.player-status { min-height: 18px; font-size: 0.85em; color: #c94b4b; }
+
+.leaderboard {
+  background: rgba(255,255,255,0.92);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.leaderboard h3 { margin: 0 0 8px; font-size: 1em; }
+.leaderboard ol { margin: 0; padding-left: 20px; font-size: 0.9em; }
+
+.round-info {
+  background: rgba(255,255,255,0.92);
+  border-radius: 16px;
+  padding: 12px 16px;
+  font-size: 0.95em;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+#turn-indicator { margin-top: 6px; font-weight: bold; }
+
+.board-area { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+/* ===== 棋盤（像大富翁一樣繞外圈一圈，中間留空）===== */
+.board {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 1 / 1;
+  background: rgba(255,255,255,0.6);
+  padding: 8px;
+  border-radius: 16px;
+  margin: 0 auto;
+}
+
+.board-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: rgba(255, 243, 207, 0.55);
+  border: 3px dashed #e0c37a;
+  border-radius: 16px;
+  font-weight: bold;
+  font-size: 1.3em;
+  color: #c9922f;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.tile {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65em;
+  font-weight: bold;
+  color: #4a3a20;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.tile-start { background: #ffd76b; }
+.tile-end { background: #ff8c8c; }
+.tile-normal { background: #eef1f6; }
+.tile-addsub { background: #a8e6cf; }
+.tile-mult { background: #ffd3b6; }
+.tile-div { background: #dcedc1; }
+.tile-word { background: #ffaaa5; }
+.tile-lucky { background: #cbaaff; }
+.tile-trap { background: #b6b6b6; }
+
+.tile .tile-icon { font-size: 1.3em; }
+.tile .tile-idx { position: absolute; top: 2px; left: 3px; font-size: 0.75em; opacity: 0.5; }
+
+.tile.glow {
+  animation: tileGlow 0.9s ease-in-out;
+}
+@keyframes tileGlow {
+  0% { box-shadow: 0 0 0px 0px gold; }
+  50% { box-shadow: 0 0 18px 6px gold; }
+  100% { box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05); }
+}
+
+.tile-tokens { position: absolute; bottom: 2px; display: flex; gap: 2px; }
+.tile-tokens span { font-size: 1em; transition: all 0.3s ease; }
+
+/* ===== 骰子 ===== */
+.dice-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.dice {
+  font-size: 3em;
+  width: 80px; height: 80px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 6px 0 #d8c39a;
+}
+.dice.rolling { animation: diceRoll 0.6s linear; }
+@keyframes diceRoll {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.event-log {
+  width: 100%;
+  max-width: 760px;
+  max-height: 140px;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.85);
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 0.9em;
+  line-height: 1.6;
+}
+.event-log div { border-bottom: 1px dashed #e0c37a; padding: 3px 0; }
+
+/* ===== 彈窗 ===== */
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 50;
+}
+.modal.hidden { display: none; }
+.modal-box {
+  background: #fffdf6;
+  border-radius: 20px;
+  padding: 30px 34px;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+}
+.question-text { font-size: 1.15em; line-height: 1.7; white-space: pre-wrap; margin: 14px 0; }
+#question-input {
+  width: 100%; padding: 12px; font-size: 1.2em; text-align: center;
+  border-radius: 10px; border: 2px solid #e0c37a; margin-bottom: 12px;
+}
+.question-feedback { margin-top: 14px; font-size: 1.05em; line-height: 1.6; }
+.question-feedback.hidden { display: none; }
+.question-feedback.correct { color: #1a8f4c; }
+.question-feedback.wrong { color: #c94b4b; }
+.question-feedback.hint { color: #c9922f; font-weight: bold; }
+
+/* ===== 金幣 / 特效 ===== */
+.coin-drop {
+  position: fixed;
+  font-size: 1.6em;
+  animation: coinFall 1s ease-in forwards;
+  pointer-events: none;
+  z-index: 100;
+}
+@keyframes coinFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(200px) rotate(360deg); opacity: 0; }
+}
+
+/* ===== 結算畫面 ===== */
+.end-panel { position: relative; overflow: hidden; }
+#end-winner { font-size: 1.4em; color: #ff6b6b; }
+.end-stats { text-align: left; margin: 20px auto; max-width: 380px; line-height: 1.9; background: #fff3cf; border-radius: 12px; padding: 16px 22px; }
+.fireworks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.firework-particle {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  animation: fwPop 1.1s ease-out forwards;
+}
+@keyframes fwPop {
+  0% { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+}
+
+/* ===== 響應式 ===== */
+@media (max-width: 900px) {
+  .game-layout { flex-direction: column; align-items: stretch; }
+  .side-panel { width: 100%; display: flex; gap: 12px; flex-wrap: wrap; }
+  .side-panel .player-card, .side-panel .leaderboard, .side-panel .round-info { flex: 1 1 200px; margin-bottom: 0; }
+}
+@media (max-width: 600px) {
+  .tile { font-size: 0.5em; gap: 0; }
+  .tile .tile-icon { font-size: 1.5em; }
+  .tile .tile-idx { display: none; } /* 小螢幕隱藏格號，圖示與棋子才不會擠在一起 */
+  .tile-tokens span { font-size: 1.3em; }
+  .board { gap: 2px; padding: 5px; }
+  .panel { padding: 24px 18px; }
+  .home-buttons .btn { width: 100%; }
+}

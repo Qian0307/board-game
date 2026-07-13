@@ -1,0 +1,75 @@
+# 財富大富翁 Money Monopoly
+
+給國小生的數學理財大富翁。純前端（HTML + CSS + JavaScript，無框架），支援：
+
+- 🎮 **本機雙人**：同一台裝置兩人輪流。
+- 🌐 **線上對戰**：老師和學生在不同地點，透過「房號」連線，兩端畫面即時同步。
+
+---
+
+## 🕹️ 怎麼玩
+
+### 本機雙人
+直接用瀏覽器打開 `index.html` → 選「🎮 本機雙人」→ 輸入名字 → 開始。
+
+### 線上對戰（兩地連線）
+1. **老師**：打開網站 → 點「🌐 建立線上房間」→ 畫面會顯示一組 **4 碼房號**（例如 `AB3K`）。
+2. 把房號用 LINE／訊息傳給學生。
+3. **學生**：打開同一個網站 → 點「🔑 加入房間」→ 輸入房號和自己的名字 → 連線。
+4. 老師端看到「學生已加入」後，按「開始遊戲」。
+5. 之後**擲骰、答題、事件都會同步到兩邊畫面**；輪到誰、誰才能操作。
+
+> 連線採 PeerJS（WebRTC）點對點傳輸，只借用一個免費公用中介伺服器牽線，遊戲資料在兩台電腦之間直接傳。**兩端都要能上網。**
+
+---
+
+## 🚀 部署到 GitHub Pages（給一個網址，雙方開網址即可）
+
+1. 在 GitHub 建一個新的 repository（例如 `money-monopoly`），設為 Public。
+2. 在這個資料夾把檔案推上去：
+   ```bash
+   git remote add origin https://github.com/<你的帳號>/money-monopoly.git
+   git branch -M main
+   git push -u origin main
+   ```
+   （本專案已幫你 `git init` 並做好第一個 commit，接上 remote 後直接 push 即可。）
+3. GitHub repo → **Settings → Pages** → Source 選 `Deploy from a branch` → Branch 選 `main` / `/ (root)` → Save。
+4. 等一兩分鐘，會得到網址：`https://<你的帳號>.github.io/money-monopoly/`
+5. 把這個網址給學生，兩人開同一個網址就能連線對戰。
+
+> GitHub Pages 是 https，PeerJS 在 https 下運作正常。
+
+---
+
+## 📁 專案結構
+
+```
+index.html        入口（畫面結構）
+css/style.css     樣式
+js/
+  main.js         啟動點
+  game.js         主控制器（回合流程、模式、網路同步）
+  board.js        棋盤與幸運／陷阱事件
+  player.js       玩家資料
+  questions.js    題庫（加減乘除＋應用題，依難度）
+  ui.js           畫面渲染與動畫
+  sound.js        Web Audio 合成音效
+  net.js          PeerJS 連線封裝（房號建立／加入）
+```
+
+---
+
+## ⚠️ 已知限制
+
+- 線上模式需要網路。少數學校／公司網路會擋 WebRTC，若連不上請換網路（例如手機熱點）。
+- 若建房時房號剛好撞號，程式會自動換一組重試。
+- 目前一間房支援 1 對 1（老師 vs 學生）。
+- 遊戲狀態不落地存檔，重新整理頁面會回到首頁。
+
+---
+
+## 🏆 遊戲規則
+
+兩位玩家輪流擲骰前進，走到事件格出現數學題（答對賺錢／答錯扣錢，應用題答錯顯示詳解），
+還有幸運格與陷阱格。**第一位抵達終點，或滿 20 回合時，比較雙方資產，資產最多者獲勝。**
+每人初始資產 $500。
