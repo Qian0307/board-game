@@ -1,0 +1,11 @@
+{
+  "name": "money-monopoly-tests",
+  "private": true,
+  "description": "用 jsdom 驅動真實按鈕流程的自動試玩測試",
+  "scripts": {
+    "test": "node test-local.js && node test-online.js && node test-rules.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.0.0"
+  }
+}

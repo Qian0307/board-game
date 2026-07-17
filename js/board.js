@@ -101,8 +101,14 @@ const LUCKY_EVENTS = [
     apply(player, opponent) { player.addMoney(300); return {}; },
   },
   {
-    text: '🎁 對手繳稅給你，對手後退 2 格！',
-    apply(player, opponent) { return { moveOpponent: -2 }; },
+    text: '🎁 對手繳稅給你 $100，對手還要後退 2 格！',
+    apply(player, opponent) {
+      // 對手現金不足時只拿得到他付得出來的部分，不會憑空生錢
+      const tax = Math.min(100, opponent.money);
+      opponent.addMoney(-tax);
+      player.addMoney(tax);
+      return { moveOpponent: -2 };
+    },
   },
   {
     text: '🎁 對手因為忙著算數學，停一回合！',

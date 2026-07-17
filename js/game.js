@@ -317,7 +317,15 @@ class Game {
     }
   }
 
+  // 從玩家扣款，回傳「實際付得出來」的金額；現金不足時只付到 0，不會出現負債
+  pay(player, amount) {
+    const paid = Math.min(amount, player.money);
+    player.addMoney(-paid);
+    return paid;
+  }
+
   // 地產格：答對數學題才能買地/蓋房；踩到別人的地，答對免付過路費、答錯要付
+  // 無論地產狀態，答題本身都有獎金／罰款（REWARD_TABLE），讓答對答錯馬上看得到差別
   async handlePropertyTile(player, category) {
     const idx = player.position;
     const prop = this.properties[idx];
@@ -336,45 +344,58 @@ class Game {
 
     const answerVal = await this.waitForAnswer();
     const correct = answerVal !== null && Math.abs(answerVal - q.answer) < 1e-9;
-    if (correct) { player.stats.correct++; this.sound.correct(); this.ui.spawnCoinDrop(); }
-    else { player.stats.wrong++; this.sound.wrong(); }
+
+    // 答題獎懲先結算，答對的獎金也能拿來買地
+    const reward = REWARD_TABLE[category];
+    let bonusLine;
+    if (correct) {
+      player.stats.correct++; this.sound.correct(); this.ui.spawnCoinDrop();
+      player.addMoney(reward.correct);
+      bonusLine = `答題獎金 +$${reward.correct}`;
+    } else {
+      player.stats.wrong++; this.sound.wrong();
+      const fine = this.pay(player, -reward.wrong);
+      bonusLine = `答錯罰款 -$${fine}`;
+    }
 
     let msg;
     if (owner === null) {
       // 無主地：答對且買得起 → 買下
       if (correct && player.money >= prop.price) {
         player.addMoney(-prop.price); prop.owner = player.index; prop.level = 1;
-        msg = `✅ 答對！買下這塊地，花了 $${prop.price} 🏠`;
+        msg = `✅ 答對！${bonusLine}，並買下這塊地（-$${prop.price}）🏠`;
         this.log(`${player.name} 買下第 ${idx} 格（$${prop.price}）`);
       } else if (correct) {
-        msg = `✅ 答對了，但你的現金不夠買（需 $${prop.price}）`;
+        msg = `✅ 答對！${bonusLine}，但現金不夠買地（需 $${prop.price}）`;
       } else {
-        msg = `❌ 答錯了，無法買地。正解：${q.answer}\n${q.explain}`;
+        msg = `❌ 答錯了，${bonusLine}，無法買地。正解：${q.answer}\n${q.explain}`;
       }
     } else if (owner === player.index) {
       // 自己的地：答對 → 蓋房升級
       const cost = upgradeCost(prop.price);
       if (correct && prop.level >= 3) {
-        msg = `✅ 答對！這塊地已經是最高等級 Lv.3 🏙️`;
+        msg = `✅ 答對！${bonusLine}。這塊地已經是最高等級 Lv.3 🏙️`;
       } else if (correct && player.money >= cost) {
         player.addMoney(-cost); prop.level++;
-        msg = `✅ 答對！蓋房升級到 Lv.${prop.level}，花了 $${cost} 🏗️`;
+        msg = `✅ 答對！${bonusLine}，並蓋房升級到 Lv.${prop.level}（-$${cost}）🏗️`;
         this.log(`${player.name} 升級第 ${idx} 格到 Lv.${prop.level}`);
       } else if (correct) {
-        msg = `✅ 答對了，但升級要 $${cost}，現金不夠`;
+        msg = `✅ 答對！${bonusLine}，但升級要 $${cost}，現金不夠`;
       } else {
-        msg = `❌ 答錯了，無法升級。正解：${q.answer}`;
+        msg = `❌ 答錯了，${bonusLine}，無法升級。正解：${q.answer}\n${q.explain}`;
       }
     } else {
-      // 別人的地：答對免過路費，答錯付錢給地主
+      // 別人的地：答對免過路費，答錯付錢給地主（付不出來的部分不算，地主不會憑空多收錢）
       const rent = rentOf(prop.price, prop.level);
       if (correct) {
-        msg = `✅ 答對！免付過路費，省下 $${rent} 🎉`;
+        msg = `✅ 答對！${bonusLine}，還免付過路費，省下 $${rent} 🎉`;
         this.log(`${player.name} 答對，免付過路費`);
       } else {
-        player.addMoney(-rent); this.players[owner].addMoney(rent);
-        msg = `❌ 答錯，付過路費 $${rent} 給 ${this.players[owner].name}。正解：${q.answer}`;
-        this.log(`${player.name} 付過路費 $${rent} 給 ${this.players[owner].name}`);
+        const paid = this.pay(player, rent);
+        this.players[owner].addMoney(paid);
+        const shortfall = paid < rent ? `（現金不足，只付得出 $${paid}）` : '';
+        msg = `❌ 答錯，${bonusLine}，還要付過路費 $${rent} 給 ${this.players[owner].name}${shortfall}。正解：${q.answer}\n${q.explain}`;
+        this.log(`${player.name} 付過路費 $${paid} 給 ${this.players[owner].name}`);
       }
     }
 
@@ -491,7 +512,10 @@ class Game {
 
   endGame(reason) {
     this.setRollEnabled(false);
-    const title = reason === 'reach' ? '🏁 有人抵達終點！' : '⏰ 20 回合結束！';
+    // 兩種結束方式都是比總資產，標題要講明白，免得先到終點的人以為自己輸得莫名其妙
+    const title = reason === 'reach'
+      ? '🏁 有人抵達終點！比較總資產分勝負'
+      : '⏰ 20 回合結束！比較總資產分勝負';
 
     const worth = this.players.map(p => this.netWorth(p));
     const maxWorth = Math.max(...worth);
