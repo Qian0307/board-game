@@ -259,20 +259,18 @@ class Game {
 
     await this.resolveTile(player);
 
-    if (this.checkGameOver(player)) { this.busy = false; return; }
-
     this.advanceTurn();
     this.updatePanels();
 
-    if (this.checkGameOver(null)) { this.busy = false; return; }
+    if (this.checkGameOver()) { this.busy = false; return; }
 
     this.busy = false;
     this.setRollEnabled(true);
   }
 
-  checkGameOver(player) {
-    if (player && player.reachedEnd(this.board.size)) { this.endGame('reach'); return true; }
-    if (this.round > this.maxRounds) { this.endGame('rounds'); return true; }
+  // 繞圈棋盤沒有「先到終點就贏」；遊戲一律玩滿 20 回合，再比總資產分勝負
+  checkGameOver() {
+    if (this.round > this.maxRounds) { this.endGame(); return true; }
     return false;
   }
 
@@ -287,7 +285,6 @@ class Game {
       this.pushState();
       this.sound.move();
       await UI.wait(120);
-      if (player.position === 0 || player.position === this.board.size - 1) break;
     }
     this.ui.glowTile(player.position);
     this.updatePanels();
@@ -510,12 +507,9 @@ class Game {
     return player.money + land;
   }
 
-  endGame(reason) {
+  endGame() {
     this.setRollEnabled(false);
-    // 兩種結束方式都是比總資產，標題要講明白，免得先到終點的人以為自己輸得莫名其妙
-    const title = reason === 'reach'
-      ? '🏁 有人抵達終點！比較總資產分勝負'
-      : '⏰ 20 回合結束！比較總資產分勝負';
+    const title = '⏰ 20 回合結束！比較總資產，資產最多者獲勝';
 
     const worth = this.players.map(p => this.netWorth(p));
     const maxWorth = Math.max(...worth);

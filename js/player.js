@@ -11,18 +11,14 @@ class Player {
     this.stats = { rolls: 0, correct: 0, wrong: 0 };
   }
 
-  // 移動位置（不會超出地圖範圍，最小為 0）
+  // 移動位置（繞圈棋盤：走到最後一格會繞回起點，前進後退都循環）
   moveBy(steps, boardSize) {
-    this.position = Math.max(0, Math.min(boardSize - 1, this.position + steps));
+    this.position = ((this.position + steps) % boardSize + boardSize) % boardSize;
   }
 
   // 增減資產，資產不會低於 0（避免出現負資產）
   addMoney(amount) {
     this.money = Math.max(0, this.money + amount);
-  }
-
-  reachedEnd(boardSize) {
-    return this.position >= boardSize - 1;
   }
 
   formattedMoney() {
