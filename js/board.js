@@ -19,6 +19,9 @@ const REWARD_TABLE = {
   word:   { correct: 150, wrong: -60 },
 };
 
+// 繞圈棋盤：每次「前進」經過起點可領到的薪水（真大富翁的過路費/薪水概念）
+const PASS_START_BONUS = 200;
+
 // 地產設定：房子/商店格可買地。價格依題型難度，答對才能買/升級，答錯要付過路費。
 const PROPERTY_PRICE = { addsub: 200, mult: 300, div: 300, word: 400 };
 const OWNER_COLOR = ['#ff9f9f', '#8fb8ff']; // 玩家1(豬)粉、玩家2(兔)藍

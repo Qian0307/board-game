@@ -198,6 +198,7 @@ class Game {
     let r2 = QuestionBank.randInt(1, 6);
     while (r1 === r2) { r1 = QuestionBank.randInt(1, 6); r2 = QuestionBank.randInt(1, 6); }
     this.currentPlayerIndex = r1 > r2 ? 0 : 1;
+    this.firstPlayerIndex = this.currentPlayerIndex; // 回合以「先攻者再次輪到」為界，確保兩人回合數相同
 
     // 線上：先送初始狀態讓訪客建立棋盤
     if (this.mode === 'host') {
@@ -279,12 +280,20 @@ class Game {
     if (!steps) return;
     const dir = steps > 0 ? 1 : -1;
     const count = Math.abs(steps);
+    let passedStart = false;
     for (let i = 0; i < count; i++) {
       player.moveBy(dir, this.board.size);
+      // 前進途中踏上/繞過起點（第 0 格）即算「經過起點」，可領薪水
+      if (dir === 1 && player.position === 0) passedStart = true;
       this.ui.renderTokens(this.players, this.board);
       this.pushState();
       this.sound.move();
       await UI.wait(120);
+    }
+    if (passedStart) {
+      player.addMoney(PASS_START_BONUS);
+      this.sound.lucky();
+      this.log(`🏁 ${player.name} 經過起點，領到薪水 $${PASS_START_BONUS}！`);
     }
     this.ui.glowTile(player.position);
     this.updatePanels();
@@ -473,7 +482,7 @@ class Game {
   advanceTurn() {
     if (this.extraRollPending) { this.extraRollPending = false; return; }
     let next = (this.currentPlayerIndex + 1) % this.players.length;
-    if (next === 0) this.round++;
+    if (next === this.firstPlayerIndex) this.round++; // 回到先攻者＝完整一回合，兩人各走一次
     this.currentPlayerIndex = next;
 
     if (this.players[this.currentPlayerIndex].skipTurn) {
