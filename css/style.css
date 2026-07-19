@@ -224,9 +224,10 @@ button { cursor: pointer; font-family: inherit; }
 /* ===== 題目/事件面板（顯示在地圖上，不遮住整個棋盤）===== */
 .board-stage { position: relative; }
 .board-modal {
-  position: absolute; left: 0; right: 0; bottom: 10px;
-  display: flex; justify-content: center;
-  pointer-events: none;            /* 面板以外的地圖保持可見、不攔截點擊 */
+  position: absolute; inset: 0;                 /* 覆蓋整個棋盤（土地）區域 */
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(28, 38, 20, 0.30);           /* 半透明遮罩，蓋在土地介面上、只罩住棋盤不罩全螢幕 */
+  border-radius: 16px;                          /* 與 board-viewport 圓角一致 */
   z-index: 40;
 }
 .modal-box {
@@ -289,12 +290,15 @@ button { cursor: pointer; font-family: inherit; }
   .side-panel { width: 100%; display: flex; gap: 12px; flex-wrap: wrap; }
   .side-panel .player-card, .side-panel .leaderboard, .side-panel .round-info { flex: 1 1 200px; margin-bottom: 0; }
 }
+/* 小螢幕：等距棋盤用 zoom 整體縮小，讓整個棋盤塞進畫面（zoom 會一併縮小佔位，
+   比 transform: scale 更適合這種絕對定位的棋盤；不支援 zoom 的瀏覽器則維持原狀＋可捲動）*/
+@media (max-width: 700px) {
+  .board { zoom: 0.72; }
+}
 @media (max-width: 600px) {
-  .tile { font-size: 0.5em; gap: 0; }
-  .tile .tile-icon { font-size: 1.5em; }
-  .tile .tile-idx { display: none; } /* 小螢幕隱藏格號，圖示與棋子才不會擠在一起 */
-  .tile-tokens span { font-size: 1.3em; }
-  .board { gap: 2px; padding: 5px; }
   .panel { padding: 24px 18px; }
   .home-buttons .btn { width: 100%; }
+}
+@media (max-width: 480px) {
+  .board { zoom: 0.52; }
 }

@@ -4,7 +4,7 @@ class Player {
     this.name = name;
     this.token = tokenEmoji;
     this.index = index;
-    this.money = 500; // 初始資產
+    this.money = 1500; // 初始資產（開局由 Game 設定，這裡與地產玩法本金一致）
     this.position = 0;
     this.skipTurn = false;
     // 統計資料

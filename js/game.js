@@ -139,7 +139,7 @@ class Game {
     const status = document.getElementById('join-status');
     if (code.length < 4) { status.textContent = '⚠️ 請輸入 4 碼房號'; return; }
 
-    this.mode = 'guest'; this.localSeat = 1; this.onlineSelfName = name;
+    this.mode = 'guest'; this.localSeat = 1;
     status.textContent = '連線中…';
     this.net = new NetManager();
     this.net.onData = (d) => this.handleNetMessage(d);
